@@ -2,18 +2,23 @@
 
 import { useDrag } from 'react-dnd'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import { AppointmentStatus } from '@/types/appointments'
+import { AppointmentStatus, type Appointment } from '@/types/appointments'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface AppointmentCardProps {
-  appointment: any
+  appointment: Appointment
 }
 
 export function AppointmentCard({ appointment }: AppointmentCardProps) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'appointment',
     item: { id: appointment.id },
+    canDrag: appointment.status !== AppointmentStatus.COMPLETED && 
+             appointment.status !== AppointmentStatus.CANCELLED &&
+             appointment.status !== AppointmentStatus.NO_SHOW,
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging()
     })
@@ -29,19 +34,62 @@ export function AppointmentCard({ appointment }: AppointmentCardProps) {
     [AppointmentStatus.NO_SHOW]: 'border-orange-500 bg-orange-50 dark:bg-orange-950'
   }
 
+  const canDrag = appointment.status !== AppointmentStatus.COMPLETED && 
+                 appointment.status !== AppointmentStatus.CANCELLED &&
+                 appointment.status !== AppointmentStatus.NO_SHOW
+
   return (
-    <Card
-      ref={drag}
-      className={cn(
-        "p-2 cursor-move border-l-4 text-sm h-full w-full",
-        statusColors[appointment.status],
-        isDragging && "opacity-50"
-      )}
-    >
-      <div className="font-medium truncate">{appointment.patientName}</div>
-      <div className="text-xs text-muted-foreground">
-        {format(new Date(appointment.startTime), 'HH:mm')} - {appointment.appointmentType.name}
-      </div>
-    </Card>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Card
+            ref={canDrag ? drag : undefined}
+            className={cn(
+              "p-2 border-l-4 text-sm h-full w-full transition-colors",
+              statusColors[appointment.status],
+              isDragging && "opacity-50",
+              canDrag && "cursor-move hover:bg-accent/50",
+              !canDrag && "opacity-75"
+            )}
+          >
+            <div className="font-medium truncate">{appointment.patientName}</div>
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <span>{format(new Date(appointment.startTime), 'HH:mm')}</span>
+              <span>•</span>
+              <span>{appointment.appointmentType.name}</span>
+            </div>
+          </Card>
+        </TooltipTrigger>
+        <TooltipContent side="top" align="start">
+          <div className="space-y-1">
+            <div className="font-medium">{appointment.patientName}</div>
+            <div className="text-xs">
+              {format(new Date(appointment.startTime), 'PPp')} ({appointment.appointmentType.duration} mins)
+            </div>
+            {appointment.reasonForVisit && (
+              <div className="text-xs text-muted-foreground">
+                Reason: {appointment.reasonForVisit}
+              </div>
+            )}
+            <div className="flex items-center gap-2 mt-1">
+              <Badge 
+                variant="outline"
+                className={cn(
+                  "text-xs",
+                  statusColors[appointment.status].replace('bg-', 'text-').replace('/50', '/700')
+                )}
+              >
+                {appointment.status}
+              </Badge>
+              {appointment.assignedVet && (
+                <Badge variant="outline" className="text-xs">
+                  {appointment.assignedVet}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
