@@ -5,7 +5,6 @@ import { DashboardStats } from '@/components/dashboard/stats'
 import { AppointmentsList } from '@/components/dashboard/appointments-list'
 import { ActivityFeed } from '@/components/dashboard/activity-feed'
 import { StaffStatus } from '@/components/dashboard/staff-status'
-import { MetricsGrid } from '@/components/dashboard/metrics-grid'
 import { DashboardSkeleton } from '@/components/dashboard/loading'
 
 export default function DashboardPage() {
@@ -19,7 +18,6 @@ export default function DashboardPage() {
             <AppointmentsList />
             <ActivityFeed />
           </div>
-          <MetricsGrid />
           <StaffStatus />
         </div>
       </Suspense>
