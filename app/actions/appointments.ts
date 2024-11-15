@@ -44,10 +44,19 @@ export async function createAppointment(data: AppointmentFormData) {
     if (!mockAppointments.has(clinicId)) {
       mockAppointments.set(clinicId, [])
     }
-    if (!validated.clinicId) {
-      return { success: false, error: "Clinic ID is required" }
+
+    // Check for conflicts before creating
+    const conflicts = await checkScheduleConflicts({
+      startTime: validated.startTime,
+      endTime: validated.endTime,
+      vetId: validated.assignedVet,
+      clinicId: validated.clinicId
+    })
+
+    if (conflicts.hasConflicts) {
+      return { success: false, error: "Time slot is not available" }
     }
-    
+
     const appointment: Appointment = {
       id: crypto.randomUUID(),
       ...validated,
@@ -56,6 +65,7 @@ export async function createAppointment(data: AppointmentFormData) {
     }
 
     mockAppointments.get(clinicId)!.push(appointment)
+    revalidatePath("/dashboard/appointments")
     return { success: true, data: appointment }
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -89,8 +99,9 @@ export async function updateAppointment(id: string, data: Partial<AppointmentFor
       updatedAt: new Date()
     }
 
+    mockAppointments.set(data.clinicId, clinicAppointments)
     revalidatePath("/dashboard/appointments")
-    return { success: true, data: mockAppointments[appointmentIndex] }
+    return { success: true, data: clinicAppointments[appointmentIndex] }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors }
@@ -99,26 +110,54 @@ export async function updateAppointment(id: string, data: Partial<AppointmentFor
   }
 }
 
-export async function deleteAppointment(id: string, clinicId: string) {
+export async function checkScheduleConflicts(data: {
+  startTime: Date
+  endTime: Date
+  vetId: string
+  roomNumber?: string
+  excludeAppointmentId?: string
+  clinicId: string
+}) {
   try {
-    if (!clinicId) {
-      return { success: false, error: "Clinic ID is required" }
-    }
-
-    const clinicAppointments = mockAppointments.get(clinicId) || []
-    const initialLength = clinicAppointments.length
+    console.log('Checking conflicts for:', data);
+    const clinicAppointments = mockAppointments.get(data.clinicId) || [];
+    console.log('Current appointments:', clinicAppointments);
     
-    const updatedAppointments = clinicAppointments.filter(apt => apt.id !== id)
-    mockAppointments.set(clinicId, updatedAppointments)
-    
-    if (updatedAppointments.length === initialLength) {
-      return { success: false, error: "Appointment not found" }
-    }
+    const conflicts = clinicAppointments.filter(apt => {
+      if (apt.id === data.excludeAppointmentId) return false;
 
-    revalidatePath("/dashboard/appointments")
-    return { success: true }
+      const hasTimeConflict = (
+        (apt.startTime <= data.startTime && apt.endTime > data.startTime) ||
+        (apt.startTime < data.endTime && apt.endTime >= data.endTime) ||
+        (data.startTime <= apt.startTime && data.endTime > apt.startTime)
+      );
+
+      const hasResourceConflict = (
+        apt.assignedVet === data.vetId ||
+        (data.roomNumber && apt.roomNumber === data.roomNumber)
+      );
+
+      const isActive = apt.status !== AppointmentStatus.CANCELLED;
+
+      console.log('Checking appointment:', apt.id, {
+        hasTimeConflict,
+        hasResourceConflict,
+        isActive
+      });
+
+      return hasTimeConflict && hasResourceConflict && isActive;
+    });
+
+    console.log('Conflicts found:', conflicts);
+
+    return { 
+      success: true, 
+      hasConflicts: conflicts.length > 0,
+      conflicts 
+    };
   } catch (error) {
-    return { success: false, error: "Failed to delete appointment" }
+    console.error('Error checking conflicts:', error);
+    return { success: false, error: "Failed to check schedule conflicts" };
   }
 }
 
@@ -140,11 +179,10 @@ export async function getAppointments(filters?: {
 
     if (filters) {
       if (filters.startDate) {
-      console.log('Filtered appointments:', filtered)
-        filtered = filtered.filter(apt => apt.startTime >= filters.startDate!)
+        filtered = filtered.filter(apt => new Date(apt.startTime) >= filters.startDate!)
       }
       if (filters.endDate) {
-        filtered = filtered.filter(apt => apt.startTime <= filters.endDate!)
+        filtered = filtered.filter(apt => new Date(apt.startTime) <= filters.endDate!)
       }
       if (filters.status) {
         filtered = filtered.filter(apt => apt.status === filters.status)
@@ -155,78 +193,80 @@ export async function getAppointments(filters?: {
       if (filters.patientId) {
         filtered = filtered.filter(apt => apt.patientId === filters.patientId)
       }
-      if (filters.clinicId) {
-        filtered = filtered.filter(apt => apt.clinicId === filters.clinicId)
-      }
+    }
+
+    // Initialize with some mock data if empty
+    if (filtered.length === 0) {
+      const mockData = generateMockAppointments(filters.clinicId)
+      mockAppointments.set(filters.clinicId, mockData)
+      filtered = mockData
     }
 
     return { success: true, data: filtered }
   } catch (error) {
+    console.error('Error getting appointments:', error)
     return { success: false, error: "Failed to fetch appointments" }
   }
 }
 
-export async function updateAppointmentStatus(id: string, status: AppointmentStatus) {
+// Helper function to generate mock appointments
+function generateMockAppointments(clinicId: string): Appointment[] {
+  const startDate = new Date()
+  startDate.setHours(9, 0, 0, 0)
+
+  return Array.from({ length: 5 }, (_, i) => {
+    const type = appointmentTypes[Math.floor(Math.random() * appointmentTypes.length)]
+    const start = new Date(startDate)
+    start.setHours(start.getHours() + i * 2)
+    const end = new Date(start)
+    end.setMinutes(end.getMinutes() + type.duration)
+
+    return {
+      id: `apt-${i}`,
+      patientId: `pat-${i}`,
+      patientName: `Patient ${i + 1}`,
+      clinicId,
+      appointmentType: type,
+      startTime: start,
+      endTime: end,
+      status: AppointmentStatus.SCHEDULED,
+      assignedVet: 'Dr. Smith',
+      notes: 'Mock appointment',
+      reasonForVisit: 'Regular checkup',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  })
+}
+
+export async function updateAppointmentStatus(id: string, status: AppointmentStatus, clinicId: string) {
   try {
-    const appointmentIndex = mockAppointments.findIndex(apt => apt.id === id)
+    const clinicAppointments = mockAppointments.get(clinicId) || []
+    const appointmentIndex = clinicAppointments.findIndex(apt => apt.id === id)
+    
     if (appointmentIndex === -1) {
       return { success: false, error: "Appointment not found" }
     }
 
-    mockAppointments[appointmentIndex] = {
-      ...mockAppointments[appointmentIndex],
+    clinicAppointments[appointmentIndex] = {
+      ...clinicAppointments[appointmentIndex],
       status,
       updatedAt: new Date()
     }
 
+    mockAppointments.set(clinicId, clinicAppointments)
     revalidatePath("/dashboard/appointments")
-    return { success: true, data: mockAppointments[appointmentIndex] }
+    return { success: true, data: clinicAppointments[appointmentIndex] }
   } catch (error) {
     return { success: false, error: "Failed to update appointment status" }
   }
 }
 
-export async function checkScheduleConflicts(data: {
-  startTime: Date
-  endTime: Date
-  vetId: string
-  roomNumber?: string
-  excludeAppointmentId?: string
-  clinicId?: string
-}) {
+export async function rescheduleAppointment(id: string, startTime: Date, endTime: Date, clinicId: string) {
   try {
-    const conflicts = mockAppointments.filter(apt => {
-      if (apt.id === data.excludeAppointmentId) return false
-
-      const hasTimeConflict = (
-        (apt.startTime <= data.startTime && apt.endTime > data.startTime) ||
-        (apt.startTime < data.endTime && apt.endTime >= data.endTime) ||
-        (data.startTime <= apt.startTime && data.endTime > apt.startTime)
-      )
-
-      const hasResourceConflict = (
-        apt.assignedVet === data.vetId ||
-        (data.roomNumber && apt.roomNumber === data.roomNumber)
-      )
-
-      const hasClinicMatch = !data.clinicId || apt.clinicId === data.clinicId
-
-      return hasTimeConflict && hasResourceConflict && hasClinicMatch
-    })
-
-    return { 
-      success: true, 
-      hasConflicts: conflicts.length > 0,
-      conflicts 
-    }
-  } catch (error) {
-    return { success: false, error: "Failed to check schedule conflicts" }
-  }
-}
-
-export async function rescheduleAppointment(id: string, startTime: Date, endTime: Date) {
-  try {
-    const appointmentIndex = mockAppointments.findIndex(apt => apt.id === id)
+    const clinicAppointments = mockAppointments.get(clinicId) || []
+    const appointmentIndex = clinicAppointments.findIndex(apt => apt.id === id)
+    
     if (appointmentIndex === -1) {
       return { success: false, error: "Appointment not found" }
     }
@@ -235,10 +275,10 @@ export async function rescheduleAppointment(id: string, startTime: Date, endTime
     const conflicts = await checkScheduleConflicts({
       startTime,
       endTime,
-      vetId: mockAppointments[appointmentIndex].assignedVet,
-      roomNumber: mockAppointments[appointmentIndex].roomNumber,
+      vetId: clinicAppointments[appointmentIndex].assignedVet,
+      roomNumber: clinicAppointments[appointmentIndex].roomNumber,
       excludeAppointmentId: id,
-      clinicId: mockAppointments[appointmentIndex].clinicId
+      clinicId
     })
 
     if (!conflicts.success) {
@@ -257,62 +297,9 @@ export async function rescheduleAppointment(id: string, startTime: Date, endTime
     }
 
     mockAppointments.set(clinicId, clinicAppointments)
+    revalidatePath("/dashboard/appointments")
     return { success: true, data: clinicAppointments[appointmentIndex] }
   } catch (error) {
     return { success: false, error: "Failed to reschedule appointment" }
-  }
-}
-
-export async function getAppointmentsByDate(date: Date, clinicId?: string) {
-  try {
-    const dayStart = new Date(date)
-    dayStart.setHours(0, 0, 0, 0)
-    
-    const dayEnd = new Date(date)
-    dayEnd.setHours(23, 59, 59, 999)
-
-    const appointments = mockAppointments.filter(apt => {
-      const matchesDate = apt.startTime >= dayStart && apt.startTime <= dayEnd
-      const matchesClinic = !clinicId || apt.clinicId === clinicId
-      return matchesDate && matchesClinic
-    })
-
-    return { success: true, data: appointments }
-  } catch (error) {
-    return { success: false, error: "Failed to fetch appointments" }
-  }
-}
-
-export async function getAppointmentById(id: string) {
-  try {
-    const appointment = mockAppointments.find(apt => apt.id === id)
-    if (!appointment) {
-      return { success: false, error: "Appointment not found" }
-    }
-
-    return { success: true, data: appointment }
-  } catch (error) {
-    return { success: false, error: "Failed to fetch appointment" }
-  }
-}
-
-export async function getAppointmentStats(clinicId?: string) {
-  try {
-    const now = new Date()
-    const filtered = clinicId 
-      ? mockAppointments.filter(apt => apt.clinicId === clinicId)
-      : mockAppointments
-
-    const stats = {
-      total: filtered.length,
-      upcoming: filtered.filter(apt => apt.startTime > now).length,
-      completed: filtered.filter(apt => apt.status === AppointmentStatus.COMPLETED).length,
-      cancelled: filtered.filter(apt => apt.status === AppointmentStatus.CANCELLED).length,
-      noShow: filtered.filter(apt => apt.status === AppointmentStatus.NO_SHOW).length,
-    }
-
-    return { success: true, data: stats }
-  } catch (error) {
-    return { success: false, error: "Failed to fetch appointment statistics" }
   }
 }
