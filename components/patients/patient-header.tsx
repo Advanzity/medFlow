@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { generateMockPets } from '@/lib/mock-patients'
 import { Pet } from '@/types/patients'
+import { Owner } from '@/types/owners'
+import { getPet } from '@/app/actions/patients'
+import { getOwner } from '@/app/actions/owners'
 import { FileEdit, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 interface PatientHeaderProps {
   patientId: string
@@ -14,13 +17,34 @@ interface PatientHeaderProps {
 
 export function PatientHeader({ patientId }: PatientHeaderProps) {
   const [patient, setPatient] = useState<Pet | null>(null)
+  const [owner, setOwner] = useState<Owner | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const pets = generateMockPets(1)
-    setPatient(pets[0])
+    async function loadData() {
+      try {
+        const patientResult = await getPet(patientId)
+        if (patientResult.success) {
+          setPatient(patientResult.data)
+          
+          const ownerResult = await getOwner(patientResult.data.ownerId)
+          if (ownerResult.success) {
+            setOwner(ownerResult.data)
+          }
+        } else {
+          toast.error('Failed to load patient details')
+        }
+      } catch (error) {
+        toast.error('Error loading patient details')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadData()
   }, [patientId])
 
-  if (!patient) return null
+  if (isLoading || !patient) return null
 
   const age = Math.floor(
     (new Date().getTime() - new Date(patient.dob).getTime()) /
@@ -47,7 +71,7 @@ export function PatientHeader({ patientId }: PatientHeaderProps) {
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="p-4 rounded-lg border bg-card">
           <div className="text-sm font-medium text-muted-foreground mb-1">Status</div>
           <div className="flex items-center gap-2">
@@ -68,6 +92,17 @@ export function PatientHeader({ patientId }: PatientHeaderProps) {
         <div className="p-4 rounded-lg border bg-card">
           <div className="text-sm font-medium text-muted-foreground mb-1">Microchip ID</div>
           <div>{patient.microchipId || 'Not chipped'}</div>
+        </div>
+
+        <div className="p-4 rounded-lg border bg-card">
+          <div className="text-sm font-medium text-muted-foreground mb-1">Owner</div>
+          {owner ? (
+            <Link href={`/dashboard/owners/${owner.id}`} className="hover:underline">
+              {owner.firstName} {owner.lastName}
+            </Link>
+          ) : (
+            <span className="text-muted-foreground">No owner assigned</span>
+          )}
         </div>
       </div>
     </div>

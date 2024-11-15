@@ -3,6 +3,7 @@ import { DashboardShell } from '@/components/dashboard/shell';
 import { PatientHeader } from '@/components/patients/patient-header';
 import { RecordList } from '@/components/medical-records/record-list';
 import { Skeleton } from '@/components/ui/skeleton';
+import { generateMockPets } from '@/lib/mock-patients';
 
 interface PatientPageProps {
   params: {

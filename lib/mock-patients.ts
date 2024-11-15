@@ -14,6 +14,7 @@ export function generateMockPets(count: number = 10): Pet[] {
   return Array.from({ length: count }, (_, i) => {
     const selectedSpecies = species[Math.floor(Math.random() * species.length)]
     const selectedBreeds = breeds[selectedSpecies as keyof typeof breeds]
+    const createdAt = subDays(new Date(), Math.floor(Math.random() * 365))
     
     return {
       id: `pet-${i + 1}`,
@@ -26,7 +27,10 @@ export function generateMockPets(count: number = 10): Pet[] {
       microchipId: Math.random() > 0.3 ? `chip-${Math.random().toString(36).substr(2, 9)}` : undefined,
       status: status[Math.floor(Math.random() * status.length)],
       lastVisit: subDays(new Date(), Math.floor(Math.random() * 30)),
-      nextAppointment: Math.random() > 0.5 ? addDays(new Date(), Math.floor(Math.random() * 30)) : undefined
+      nextAppointment: Math.random() > 0.5 ? addDays(new Date(), Math.floor(Math.random() * 30)) : undefined,
+      notes: Math.random() > 0.5 ? 'Some notes about the pet' : undefined,
+      createdAt,
+      updatedAt: new Date()
     }
   })
 }
