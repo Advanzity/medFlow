@@ -50,7 +50,7 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
       name: "",
       species: "",
       breed: "",
-      dob: "",
+      dob:"",
       weight: "",
       microchipId: "",
       status: "active",

@@ -121,10 +121,9 @@ export async function searchBreeds(params: {
     )
 
     return {
-  success: true,
-  data: Array.isArray(filtered) ? filtered.slice(0, limit) : []
-}
-
+      success: true,
+      data: filtered.slice(0, limit)
+    }
   } catch (error) {
     console.error('Error searching breeds:', error)
     return { success: false, error: "Failed to search breeds" }

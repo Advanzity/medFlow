@@ -1,16 +1,8 @@
 "use client"
 
-import * as React from "react"
-import { Check, ChevronsUpDown, Plus } from "lucide-react"
+import { Check, ChevronsUpDown, Plus, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command"
 import {
   Popover,
   PopoverContent,
@@ -28,6 +20,7 @@ import { useClinicStore } from "@/hooks/use-clinic"
 import { searchBreeds, addNewEntry } from "@/app/actions/suggestions"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
+import { useEffect, useState } from "react"
 
 interface BreedComboboxProps {
   species?: string
@@ -37,85 +30,78 @@ interface BreedComboboxProps {
 }
 
 export function BreedCombobox({ species, value, onChange, error }: BreedComboboxProps) {
-  const [open, setOpen] = React.useState(false)
-  const [dialogOpen, setDialogOpen] = React.useState(false)
-  const [breeds, setBreeds] = React.useState<string[]>([])
-  const [search, setSearch] = React.useState("")
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [newBreed, setNewBreed] = React.useState("")
+  const [open, setOpen] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [breeds, setBreeds] = useState<string[]>([])
+  const [search, setSearch] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [newBreed, setNewBreed] = useState("")
+
   const { selectedClinic } = useClinicStore()
   const debouncedSearch = useDebounce(search, 300)
 
-  React.useEffect(() => {
-    if (!species || !selectedClinic?.id) return
-
+  useEffect(() => { 
     async function fetchBreeds() {
-      setIsLoading(true)
-      try {
-        const result = await searchBreeds({
-          clinicId: selectedClinic.id,
-          species,
-          query: debouncedSearch || '',
-          limit: 10
-        })
-        if (result.success) {
-          setBreeds(Array.isArray(result.data) ? result.data : [])
-        }
-      } catch (error) {
-        console.error('Error fetching breeds:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchBreeds()
-  }, [species, selectedClinic?.id, debouncedSearch])
-
-  const handleAddNewBreed = async () => {
-    if (!species || !selectedClinic?.id || !newBreed.trim()) return
-
-    try {
-      const result = await addNewEntry({
+      if (!selectedClinic) return;
+      const { success, data, error } = await searchBreeds({
         clinicId: selectedClinic.id,
-        type: "breed",
-        value: newBreed,
-        metadata: { species }
+        species: species || "",
+        query: debouncedSearch,
       })
-
-      if (result.success) {
-        toast.success("New breed added successfully")
-        setBreeds(prev => [...prev, newBreed])
-        onChange(newBreed)
-        setDialogOpen(false)
-        setNewBreed("")
+      if (success) {
+        setBreeds(data || [])
       } else {
-        toast.error(result.error as string)
+        toast.error(typeof error === 'string' ? error : 'An error occurred')
       }
-    } catch (error) {
-      toast.error("Failed to add new breed")
     }
-  }
+    fetchBreeds()
+  }, [debouncedSearch, species, selectedClinic])
 
-  if (!species) {
+  if (!selectedClinic) {
     return (
-      <Input
-        disabled
-        placeholder="Select a species first"
-        className={cn(error && "border-destructive")}
-      />
+      <div className="relative">
+        <Input
+          disabled
+          placeholder="Please select a clinic first" 
+          className={cn(
+            "pr-10", // Add space for icon
+            error && "border-destructive"
+          )}
+        />
+        <ChevronsUpDown className="absolute right-3 top-3 h-4 w-4 opacity-50" />
+      </div>
     )
   }
+  
 
+  // Early return if no species selected
+  if (!species) {
+    return (
+      <div className="relative">
+        <Input
+          disabled
+          placeholder="Select a species first"
+          className={cn(
+            "pr-10",
+            error && "border-destructive" 
+          )}
+        />
+        <ChevronsUpDown className="absolute right-3 top-3 h-4 w-4 opacity-50" />
+      </div>
+    )
+  }
+  
   return (
     <div className="relative">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            role="combobox"
+            role="combobox" 
             aria-expanded={open}
+            aria-label="Select breed"
             className={cn(
-              "w-full justify-between",
+              "w-full justify-between font-normal",
               error && "border-destructive",
               !value && "text-muted-foreground"
             )}
@@ -124,78 +110,95 @@ export function BreedCombobox({ species, value, onChange, error }: BreedCombobox
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0">
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Search breeds..."
-              value={search || ""}
-              onValueChange={setSearch}
-            />
-            <CommandEmpty className="py-6 text-center text-sm">
-              {isLoading ? (
-                "Loading..."
-              ) : (
-                <div className="space-y-2">
-                  <p>No breeds found.</p>
-                  <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add New Breed
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add New Breed</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Input
-                            placeholder="Enter breed name"
-                            value={newBreed}
-                            onChange={(e) => setNewBreed(e.target.value)}
-                          />
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => setDialogOpen(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button onClick={handleAddNewBreed}>
-                            Add Breed
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              )}
-            </CommandEmpty>
-            <CommandGroup>
+        <PopoverContent className="w-[300px] p-0" align="start">
+          {/* <div className="flex flex-col gap-2 p-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search breeds..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div> */}
+          <div className="flex flex-col gap-2 p-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search breeds..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
               {breeds.map((breed) => (
-                <CommandItem
+                <Button
                   key={breed}
-                  value={breed}
-                  onSelect={() => {
+                  variant="ghost"
+                  className="justify-between"
+                  onClick={() => {
                     onChange(breed)
                     setOpen(false)
                   }}
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === breed ? "opacity-100" : "opacity-0"
-                    )}
-                  />
                   {breed}
-                </CommandItem>
+                  {breed === value && <Check className="h-4 w-4 shrink-0" />}
+                </Button>
               ))}
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setDialogOpen(true)}
+            >
+              Add new breed
+            </Button>
+            
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <div />
+              </DialogTrigger>
+              <DialogContent className="w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>Add new breed</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col gap-2">
+                  <Input
+                    placeholder="Enter new breed..."
+                    value={newBreed}
+                    onChange={(e) => setNewBreed(e.target.value)}
+                  />
+                  <Button
+                    variant="default"
+                    onClick={async () => {
+                      setIsLoading(true)
+                      const { success, error } = await addNewEntry({
+                        clinicId: selectedClinic.id,
+                        type: "breed",
+                        value: newBreed,
+                        metadata: { species },
+                      })
+                      setIsLoading(false)
+                      if (success) {
+                        toast.success("Breed added successfully")
+                        setBreeds([...breeds, newBreed])
+                        setNewBreed("")
+                        setDialogOpen(false)
+                      } else {
+                        toast.error(typeof error === "string" ? error : "Failed to add breed")
+                      }
+                    }}
+                    disabled={!newBreed || isLoading}
+                  >
+                    Add breed
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            </div>
+          </PopoverContent>
+          </Popover>
     </div>
   )
 }

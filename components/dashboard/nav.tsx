@@ -13,6 +13,8 @@ import {
   CreditCard,
   BarChart,
 } from "lucide-react"
+import { Separator } from "../ui/separator"
+import { ClinicSwitcher } from "./clinic-switcher"
 
 const navigation = [
   {
@@ -81,6 +83,14 @@ export function DashboardNav() {
           </Link>
         )
       })}
+
+    {
+    }      
+
+    <div className="absolute bottom-5 left-0 right-0 p-2">
+      <Separator className="mb-4" />
+      <ClinicSwitcher />
+    </div>
     </nav>
   )
 }

@@ -46,7 +46,7 @@ export function RecordList({ petId }: { petId?: string }) {
       })
 
       if (result.success) {
-        setRecords(result.data)
+        setRecords(result.data ?? [])
       } else {
         toast.error(result.error as string)
       }
