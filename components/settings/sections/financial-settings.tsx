@@ -48,12 +48,20 @@ export function FinancialSettings() {
   const form = useForm<z.infer<typeof financialFormSchema>>({
     resolver: zodResolver(financialFormSchema),
     defaultValues: async () => {
-      if (!selectedClinic) return {}
+      if (!selectedClinic) return {
+        payment: { gateway: "", currency: "", taxRate: 0 },
+        billing: [],
+        insurance: []
+      }
       const result = await getFinancialSettings(selectedClinic.id)
       if (result.success) {
         return result.data
       }
-      return {}
+      return {
+        payment: { gateway: "", currency: "", taxRate: 0 },
+        billing: [],
+        insurance: []
+      }
     }
   })
 

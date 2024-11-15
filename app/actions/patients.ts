@@ -28,7 +28,9 @@ export async function createPet(data: PetFormData) {
     
     const pet: Pet = {
       id: crypto.randomUUID(),
-      ...validated
+      ...validated,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
 
     mockPets.push(pet)

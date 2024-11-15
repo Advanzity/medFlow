@@ -57,8 +57,8 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
       name: "",
       species: "",
       breed: "",
-      dob: "",
-      weight: "",
+      dob: new Date(),
+      weight: 0,
       microchipId: "",
       ownerId: "",
       status: "active",
@@ -71,7 +71,9 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
       try {
         const result = await searchOwners()
         if (result.success) {
-          setOwners(result.data)
+          if (result.data) {
+            setOwners(result.data)
+          }
         }
       } catch (error) {
         toast.error('Failed to load owners')
@@ -173,7 +175,7 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
                 <FormItem>
                   <FormLabel>Date of Birth</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" {...field} value={field.value ? field.value.toISOString().split('T')[0] : ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -48,12 +48,12 @@ export function StaffSettings() {
   const form = useForm<z.infer<typeof staffFormSchema>>({
     resolver: zodResolver(staffFormSchema),
     defaultValues: async () => {
-      if (!selectedClinic) return {}
+      if (!selectedClinic) return { roles: [], staff: [] }
       const result = await getStaffSettings(selectedClinic.id)
       if (result.success) {
         return result.data
       }
-      return {}
+      return { roles: [], staff: [] }
     }
   })
 

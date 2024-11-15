@@ -26,28 +26,71 @@ const practiceFormSchema = z.object({
   })),
   branding: z.object({
     primaryColor: z.string(),
-    theme: z.enum(["light", "dark", "system"])
-  })
+    theme: z.enum(["light", "dark", "system"]),
+    logo: z.string().optional()
+  }),
+  licenses: z.array(z.object({
+    type: z.string(),
+    number: z.string(),
+    expiryDate: z.string()
+  }))
 })
+
+type PracticeSettingsData = z.infer<typeof practiceFormSchema>
+
+
 
 export function PracticeSettings() {
   const { selectedClinic } = useClinicStore()
   const [isLoading, setIsLoading] = useState(false)
 
-  const form = useForm<z.infer<typeof practiceFormSchema>>({
-    resolver: zodResolver(practiceFormSchema),
+  const form = useForm<PracticeSettingsData>({
     defaultValues: async () => {
-      if (!selectedClinic) return {}
-      const result = await getPracticeSettings(selectedClinic.id)
-      if (result.success) {
-        return result.data
+      const defaultData: PracticeSettingsData = {
+        name: "",
+        address: "",
+        phone: "",
+        email: "",
+        operatingHours: Array(7).fill(0).map((_, index) => ({
+          day: index,
+          start: "",
+          end: "",
+          isOpen: false
+        })),
+        branding: {
+          primaryColor: "",
+          theme: "light",
+          logo: undefined
+        },
+        licenses: []
       }
-      return {}
+
+      if (!selectedClinic) {
+        return defaultData
+      }
+      
+      const result = await getPracticeSettings(selectedClinic.id)
+      if (result.success && result.data) {
+        return {
+          ...defaultData,
+          ...result.data,
+          operatingHours: result.data.operatingHours || defaultData.operatingHours,
+          branding: {
+            ...result.data.branding,
+            theme: (result.data.branding?.theme as "light" | "dark" | "system") || "light"
+          }
+        }
+      }
+      
+      return defaultData
     }
   })
 
-  async function onSubmit(data: z.infer<typeof practiceFormSchema>) {
-    if (!selectedClinic) return
+  async function onSubmit(data: PracticeSettingsData) {
+    if (!selectedClinic) {
+      toast.error("No clinic selected")
+      return
+    }
 
     setIsLoading(true)
     try {
@@ -55,7 +98,7 @@ export function PracticeSettings() {
       if (result.success) {
         toast.success("Practice settings updated")
       } else {
-        toast.error(result.error as string)
+        toast.error(Array.isArray(result.error) ? result.error[0]?.message : result.error || "Failed to update settings")
       }
     } catch (error) {
       toast.error("Failed to update settings")
@@ -127,7 +170,7 @@ export function PracticeSettings() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter email address" {...field} />
+                      <Input type="email" placeholder="Enter email address" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

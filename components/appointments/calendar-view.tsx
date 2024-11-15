@@ -63,7 +63,7 @@ export function CalendarView() {
 
       if (result.success) {
         console.log('Appointments loaded:', result.data)
-        setAppointments(result.data)
+        setAppointments(result.data || [])
       } else {
         console.error('Failed to load appointments:', result.error)
         toast.error("Failed to load appointments: " + (result.error || 'Unknown error'))
@@ -110,7 +110,11 @@ export function CalendarView() {
 
     try {
       console.log('Rescheduling appointment:', { id, newTime, newEndTime })
-      const result = await rescheduleAppointment(id, newTime, newEndTime)
+      if (!selectedClinic) {
+        toast.error('No clinic selected')
+        return
+      }
+      const result = await rescheduleAppointment(id, newTime, newEndTime, selectedClinic.id)
       
       if (result.success) {
         toast.success('Appointment rescheduled')

@@ -14,8 +14,8 @@ interface AppointmentListProps {
 }
 
 export function AppointmentList({ appointments, onStatusChange }: AppointmentListProps) {
-  const handleStatusUpdate = async (id: string, status: AppointmentStatus) => {
-    const result = await updateAppointmentStatus(id, status)
+  const handleStatusUpdate = async (id: string, status: AppointmentStatus, clinicId: string) => {
+    const result = await updateAppointmentStatus(id, status, clinicId)
     if (result.success) {
       toast.success('Appointment status updated')
       onStatusChange()
@@ -50,7 +50,7 @@ export function AppointmentList({ appointments, onStatusChange }: AppointmentLis
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleStatusUpdate(appointment.id, AppointmentStatus.CONFIRMED)}
+                    onClick={() => handleStatusUpdate(appointment.id, AppointmentStatus.CONFIRMED, appointment.clinicId)}
                   >
                     Confirm
                   </Button>
@@ -59,7 +59,7 @@ export function AppointmentList({ appointments, onStatusChange }: AppointmentLis
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleStatusUpdate(appointment.id, AppointmentStatus.CHECKED_IN)}
+                    onClick={() => handleStatusUpdate(appointment.id, AppointmentStatus.CHECKED_IN, appointment.clinicId)}
                   >
                     Check In
                   </Button>
@@ -69,7 +69,7 @@ export function AppointmentList({ appointments, onStatusChange }: AppointmentLis
                     size="sm"
                     variant="outline"
                     className="text-destructive"
-                    onClick={() => handleStatusUpdate(appointment.id, AppointmentStatus.CANCELLED)}
+                    onClick={() => handleStatusUpdate(appointment.id, AppointmentStatus.CANCELLED, appointment.clinicId)}
                   >
                     Cancel
                   </Button>

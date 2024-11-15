@@ -26,11 +26,17 @@ export function OwnerDetails({ ownerId }: OwnerDetailsProps) {
       try {
         const result = await getOwner(ownerId)
         if (result.success) {
-          setOwner(result.data)
+          if (result.data) {
+            setOwner(result.data)
+          } else {
+            toast.error('Owner data is undefined')
+          }
           // In a real app, we would fetch the actual pets
           // For now, filter mock pets based on owner's petIds
           const mockPets = generateMockPets(50)
-          setPets(mockPets.filter(pet => result.data.petIds.includes(pet.id)))
+          if (result.data) {
+            setPets(mockPets.filter(pet => result.data!.petIds.includes(pet.id)))
+          }
         } else {
           toast.error('Failed to load owner details')
         }

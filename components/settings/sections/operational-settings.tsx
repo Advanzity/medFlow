@@ -42,13 +42,15 @@ export function OperationalSettings() {
 
   const form = useForm<z.infer<typeof operationalFormSchema>>({
     resolver: zodResolver(operationalFormSchema),
-    defaultValues: async () => {
-      if (!selectedClinic) return {}
-      const result = await getOperationalSettings(selectedClinic.id)
-      if (result.success) {
-        return result.data
-      }
-      return {}
+    defaultValues: {
+      scheduling: {
+        bufferTime: 0,
+        minAdvanceBooking: 0,
+        maxAdvanceBooking: 1,
+        allowDoubleBooking: false
+      },
+      services: [],
+      resources: []
     }
   })
 

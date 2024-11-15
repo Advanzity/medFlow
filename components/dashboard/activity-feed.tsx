@@ -91,7 +91,7 @@ export function ActivityFeed() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {activities.map((activity) => {
+          {activities.map((activity: { id: string; type: keyof typeof activityIcons; patientName: string; description: string; timestamp: string }) => {
             const Icon = activityIcons[activity.type]
             return (
               <div

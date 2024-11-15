@@ -22,7 +22,11 @@ export function OwnerHeader({ ownerId }: OwnerHeaderProps) {
       try {
         const result = await getOwner(ownerId)
         if (result.success) {
-          setOwner(result.data)
+          if (result.data) {
+            setOwner(result.data)
+          } else {
+            toast.error('Owner data is undefined')
+          }
         } else {
           toast.error('Failed to load owner details')
         }

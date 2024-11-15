@@ -90,7 +90,7 @@ export function StaffStatus() {
       </CardHeader>
       <CardContent>
         <div className="grid gap-6 md:grid-cols-2">
-          {staff.map((member) => (
+          {staff.map((member: { id: string; avatar: string; name: string; role: string; status: keyof typeof statusColors; nextAvailable?: string }) => (
             <div
               key={member.id}
               className="flex items-center justify-between space-x-4"
@@ -98,7 +98,7 @@ export function StaffStatus() {
               <div className="flex items-center space-x-4">
                 <Avatar>
                   <AvatarImage src={member.avatar} alt={member.name} />
-                  <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                  <AvatarFallback>{member.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-sm font-medium leading-none">{member.name}</p>

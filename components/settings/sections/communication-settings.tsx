@@ -42,6 +42,7 @@ const communicationFormSchema = z.object({
   })
 })
 
+
 export function CommunicationSettings() {
   const { selectedClinic } = useClinicStore()
   const [isLoading, setIsLoading] = useState(false)
@@ -49,12 +50,36 @@ export function CommunicationSettings() {
   const form = useForm<z.infer<typeof communicationFormSchema>>({
     resolver: zodResolver(communicationFormSchema),
     defaultValues: async () => {
-      if (!selectedClinic) return {}
+      if (!selectedClinic) return {
+        templates: [],
+        reminders: [],
+        preferences: {
+          defaultChannel: "email" as "email" | "sms" | "push",
+          languages: []
+        }
+      }
       const result = await getCommunicationSettings(selectedClinic.id)
       if (result.success) {
-        return result.data
+        return {
+          ...result.data,
+          templates: result.data.templates.map((template: any) => ({
+            ...template,
+            type: template.type as "email" | "sms" | "push"
+          })),
+          preferences: {
+            ...result.data.preferences,
+            defaultChannel: result.data.preferences.defaultChannel as "email" | "sms" | "push"
+          }
+        }
       }
-      return {}
+      return {
+        templates: [],
+        reminders: [],
+        preferences: {
+          defaultChannel: "email" as "email" | "sms" | "push",
+          languages: []
+        }
+      }
     }
   })
 

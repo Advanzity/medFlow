@@ -44,7 +44,7 @@ export function PatientList() {
     try {
       const result = await searchPets(debouncedSearch, filters)
       if (result.success) {
-        setPatients(result.data)
+        setPatients(result.data ?? [])
       } else {
         toast.error('Failed to load patients')
       }

@@ -40,7 +40,11 @@ export function OwnerList() {
         search: debouncedSearch
       })
       if (result.success) {
-        setOwners(result.data)
+        if (result.data) {
+          setOwners(result.data)
+        } else {
+          setOwners([])
+        }
       } else {
         toast.error('Failed to load owners')
       }

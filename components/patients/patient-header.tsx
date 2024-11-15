@@ -25,11 +25,23 @@ export function PatientHeader({ patientId }: PatientHeaderProps) {
       try {
         const patientResult = await getPet(patientId)
         if (patientResult.success) {
-          setPatient(patientResult.data)
+          if (patientResult.data) {
+            setPatient(patientResult.data)
+          } else {
+            toast.error('Patient data is undefined')
+          }
           
-          const ownerResult = await getOwner(patientResult.data.ownerId)
-          if (ownerResult.success) {
-            setOwner(ownerResult.data)
+          if (patientResult.data) {
+            const ownerResult = await getOwner(patientResult.data.ownerId)
+            if (ownerResult.success) {
+              if (ownerResult.data) {
+                setOwner(ownerResult.data)
+              } else {
+                toast.error('Owner data is undefined')
+              }
+            }
+          } else {
+            toast.error('Patient data is undefined')
           }
         } else {
           toast.error('Failed to load patient details')
