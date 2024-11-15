@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { generateMockStaff } from '@/lib/mock-data'
+import { getStaffStatus } from '@/app/actions/dashboard'
 import { format } from 'date-fns'
+import { useClinicStore } from '@/hooks/use-clinic'
+import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const statusColors = {
   Available: 'bg-green-500',
@@ -15,14 +17,71 @@ const statusColors = {
 }
 
 export function StaffStatus() {
-  const [staff, setStaff] = useState(generateMockStaff())
+  const [staff, setStaff] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const { selectedClinic } = useClinicStore()
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStaff(generateMockStaff())
-    }, 20000)
+    async function loadStaffStatus() {
+      if (!selectedClinic?.id) return
+
+      try {
+        const result = await getStaffStatus(selectedClinic.id)
+        if (result.success) {
+          setStaff(result.data || [])
+        } else {
+          toast.error('Failed to load staff status')
+        }
+      } catch (error) {
+        toast.error('Error loading staff status')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadStaffStatus()
+    // Refresh staff status every 2 minutes
+    const interval = setInterval(loadStaffStatus, 2 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [selectedClinic])
+
+  if (!selectedClinic) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Staff Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4 text-muted-foreground">
+            Please select a clinic to view staff status
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Staff Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 md:grid-cols-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[150px]" />
+                  <Skeleton className="h-4 w-[100px]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
