@@ -2,6 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Calendar, Clock, AlertCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface Resource {
   id: string
@@ -22,6 +25,12 @@ export function ResourceList({ resources, onResourceSelect }: ResourceListProps)
     maintenance: 'bg-red-500'
   }
 
+  const statusIcons = {
+    available: Clock,
+    busy: Calendar,
+    maintenance: AlertCircle
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -29,22 +38,35 @@ export function ResourceList({ resources, onResourceSelect }: ResourceListProps)
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {resources.map(resource => (
-            <div
-              key={resource.id}
-              className="flex items-center justify-between p-2 hover:bg-accent rounded-md cursor-pointer"
-              onClick={() => onResourceSelect(resource)}
-            >
-              <div>
-                <div className="font-medium">{resource.name}</div>
-                <div className="text-sm text-muted-foreground capitalize">{resource.type}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className={`h-2 w-2 rounded-full ${statusColors[resource.status]}`} />
-                <span className="text-sm capitalize">{resource.status}</span>
-              </div>
-            </div>
-          ))}
+          {resources.map(resource => {
+            const Icon = statusIcons[resource.status]
+            
+            return (
+              <Button
+                key={resource.id}
+                variant="ghost"
+                className="w-full justify-between hover:bg-accent"
+                onClick={() => onResourceSelect(resource)}
+              >
+                <div className="flex items-center gap-2">
+                  <Icon className="h-4 w-4" />
+                  <div className="text-left">
+                    <div className="font-medium">{resource.name}</div>
+                    <div className="text-xs text-muted-foreground capitalize">{resource.type}</div>
+                  </div>
+                </div>
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "ml-2",
+                    statusColors[resource.status]
+                  )}
+                >
+                  {resource.status}
+                </Badge>
+              </Button>
+            )
+          })}
         </div>
       </CardContent>
     </Card>
