@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { generateMockActivities } from '@/lib/mock-data'
+import { getRecentActivity } from '@/app/actions/dashboard'
 import { formatDistanceToNow } from 'date-fns'
 import { Activity, FileText, CreditCard, Calendar, Stethoscope } from 'lucide-react'
+import { useClinicStore } from '@/hooks/use-clinic'
+import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const activityIcons = {
   Visit: Stethoscope,
@@ -15,14 +18,71 @@ const activityIcons = {
 }
 
 export function ActivityFeed() {
-  const [activities, setActivities] = useState(generateMockActivities(8))
+  const [activities, setActivities] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const { selectedClinic } = useClinicStore()
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActivities(generateMockActivities(8))
-    }, 15000)
+    async function loadActivities() {
+      if (!selectedClinic?.id) return
+
+      try {
+        const result = await getRecentActivity(selectedClinic.id)
+        if (result.success) {
+          setActivities(result.data || [])
+        } else {
+          toast.error('Failed to load activity feed')
+        }
+      } catch (error) {
+        toast.error('Error loading activity feed')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadActivities()
+    // Refresh activities every minute
+    const interval = setInterval(loadActivities, 60 * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [selectedClinic])
+
+  if (!selectedClinic) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4 text-muted-foreground">
+            Please select a clinic to view activity
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex gap-4">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-[200px]" />
+                  <Skeleton className="h-4 w-[150px]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
