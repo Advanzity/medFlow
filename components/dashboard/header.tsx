@@ -26,19 +26,7 @@ export function DashboardHeader() {
           </div>
         )}
       </div>
-      <div className="flex flex-col xs:flex-row gap-2 sm:gap-4">
-        <Select defaultValue={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-[180px]">
-            <CalendarRange className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Select date range" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="week">This Week</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
-            <SelectItem value="quarter">This Quarter</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col xs:flex-row gap-2 sm:gap-4">      
         <div className="flex gap-2">
           <Button variant="outline" size="icon">
             <Download className="h-4 w-4" />
