@@ -2,18 +2,67 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { generateMockDailyStats } from '@/lib/mock-data'
+import { getDailyStats } from '@/app/actions/dashboard'
 import { Users, DollarSign, Calendar, Star } from 'lucide-react'
+import { useClinicStore } from '@/hooks/use-clinic'
+import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function DashboardStats() {
-  const [stats, setStats] = useState(generateMockDailyStats())
+  const [stats, setStats] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { selectedClinic } = useClinicStore()
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStats(generateMockDailyStats())
-    }, 5000)
+    async function loadStats() {
+      if (!selectedClinic?.id) return
+
+      try {
+        const result = await getDailyStats(selectedClinic.id)
+        if (result.success) {
+          setStats(result.data)
+        } else {
+          toast.error('Failed to load statistics')
+        }
+      } catch (error) {
+        toast.error('Error loading statistics')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadStats()
+    // Refresh stats every 5 minutes
+    const interval = setInterval(loadStats, 5 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [selectedClinic])
+
+  if (!selectedClinic) {
+    return (
+      <div className="text-center py-4 text-muted-foreground">
+        Please select a clinic to view statistics
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Skeleton className="h-4 w-[100px]" />
+              <Skeleton className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-[120px] mb-2" />
+              <Skeleton className="h-4 w-[80px]" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -29,6 +78,7 @@ export function DashboardStats() {
           </p>
         </CardContent>
       </Card>
+      
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Revenue</CardTitle>
@@ -43,6 +93,7 @@ export function DashboardStats() {
           </p>
         </CardContent>
       </Card>
+      
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Appointments</CardTitle>
@@ -55,6 +106,7 @@ export function DashboardStats() {
           </p>
         </CardContent>
       </Card>
+      
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Satisfaction</CardTitle>
