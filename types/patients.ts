@@ -10,6 +10,9 @@ export interface Pet {
   status: 'active' | 'deceased' | 'archived'
   lastVisit?: Date
   nextAppointment?: Date
+  notes?: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface MedicalRecord {
@@ -46,4 +49,5 @@ export interface SearchFilters {
     end: Date
   }
   vetId?: string
+  ownerId?: string
 }
