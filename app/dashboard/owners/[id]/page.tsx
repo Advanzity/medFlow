@@ -10,6 +10,13 @@ interface OwnerPageProps {
   }
 }
 
+export function generateStaticParams() {
+  const owners = ["1", "2", "3", "4", "5"].map((id) => ({ id }))
+  return owners.map((owner) => ({
+    id: owner.id
+  }))
+}
+
 export default function OwnerDetailsPage({ params }: OwnerPageProps) {
   return (
     <DashboardShell>
