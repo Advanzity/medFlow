@@ -115,21 +115,24 @@ export function TimeGrid({ date, view, appointments, onAppointmentMove, isLoadin
               </div>
 
               {/* Slots for each day */}
-              {days.map((day) => {
-                const slotTime = new Date(day)
-                slotTime.setHours(time.getHours(), time.getMinutes())
-                
-                return (
-                  <TimeSlot
-                    key={`${day.toISOString()}-${time.toISOString()}`}
-                    time={slotTime}
-                    appointments={appointments.filter(apt => {
-                      const aptTime = new Date(apt.startTime)
-                      return format(aptTime, 'yyyy-MM-dd HH:mm') === format(slotTime, 'yyyy-MM-dd HH:mm')
-                    })}
-                  />
-                )
-              })}
+{days.map((day) => {
+  const slotTime = new Date(day)
+  slotTime.setHours(time.getHours(), time.getMinutes())
+  
+  return (
+    <TimeSlot
+      key={`${day.toISOString()}-${time.toISOString()}`}
+      time={slotTime}
+      appointments={appointments.filter(apt => {
+        const aptStart = new Date(apt.startTime)
+        const aptEnd = new Date(apt.endTime)
+        
+        // Check if slot time falls within appointment time range
+        return slotTime >= aptStart && slotTime < aptEnd
+      })}
+    />
+  )
+})}
             </div>
           ))}
         </div>

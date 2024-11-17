@@ -31,9 +31,9 @@ export function BillingTabs() {
         <PaymentList />
       </TabsContent>
 
-      <TabsContent value="pos">
+      {/* <TabsContent value="pos">
         <POSTerminal />
-      </TabsContent>
+      </TabsContent> */}
 
       <TabsContent value="insurance">
         <InsuranceList />

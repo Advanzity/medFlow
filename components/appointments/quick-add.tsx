@@ -25,8 +25,8 @@ import {
 import { appointmentTypes } from '@/lib/appointment-types'
 import { createAppointment } from '@/app/actions/appointments'
 import { useClinicStore } from '@/hooks/use-clinic'
-import { toast } from 'sonner'
 import { addMinutes, set } from 'date-fns'
+import { useToast } from "@/hooks/use-toast"
 import { AppointmentStatus } from '@/types/appointments'
 import { SmartScheduler } from './smart-scheduler'
 
@@ -46,6 +46,7 @@ interface QuickAddProps {
 export function AppointmentQuickAdd({ open, onOpenChange, onSuccess }: QuickAddProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { selectedClinic } = useClinicStore()
+  const { toast } = useToast()
   const [selectedStartTime, setSelectedStartTime] = useState<Date | null>(null)
   const [selectedEndTime, setSelectedEndTime] = useState<Date | null>(null)
 
@@ -66,18 +67,30 @@ export function AppointmentQuickAdd({ open, onOpenChange, onSuccess }: QuickAddP
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     if (!selectedClinic?.id) {
-      toast.error('Please select a clinic first')
+      toast({
+        variant: 'destructive',
+        title: 'No clinic selected',
+        description: 'Please select a clinic to create an appointment',
+      })
       return
     }
 
     if (!selectedStartTime || !selectedEndTime) {
-      toast.error('Please select a time slot')
+      toast({
+        variant: 'destructive',
+        title: 'No time slot selected',
+        description: 'Please select a time slot to create an appointment',
+      })
       return
     }
 
     const selectedType = appointmentTypes.find(t => t.id === data.appointmentTypeId)
     if (!selectedType) {
-      toast.error('Invalid appointment type')
+      toast({
+        variant: 'destructive',
+        title: 'Invalid appointment type',
+        description: 'Please select a valid appointment type',
+      })
       return
     }
 
@@ -103,7 +116,11 @@ export function AppointmentQuickAdd({ open, onOpenChange, onSuccess }: QuickAddP
         throw new Error(result.error as string)
       }
 
-      toast.success('Appointment created successfully')
+      toast({
+        title: 'Appointment created',
+        description: 'Appointment has been successfully scheduled',
+        variant: 'default',
+      })
       form.reset()
       setSelectedStartTime(null)
       setSelectedEndTime(null)
@@ -111,7 +128,12 @@ export function AppointmentQuickAdd({ open, onOpenChange, onSuccess }: QuickAddP
       onOpenChange(false)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create appointment'
-      toast.error(errorMessage)
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+      
     } finally {
       setIsSubmitting(false)
     }

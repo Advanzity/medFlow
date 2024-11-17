@@ -196,11 +196,11 @@ export async function getAppointments(filters?: {
     }
 
     // Initialize with some mock data if empty
-    if (filtered.length === 0) {
-      const mockData = generateMockAppointments(filters.clinicId)
-      mockAppointments.set(filters.clinicId, mockData)
-      filtered = mockData
-    }
+    // if (filtered.length === 0) {
+    //   const mockData = generateMockAppointments(filters.clinicId)
+    //   mockAppointments.set(filters.clinicId, mockData)
+    //   filtered = mockData
+    // }
 
     return { success: true, data: filtered }
   } catch (error) {

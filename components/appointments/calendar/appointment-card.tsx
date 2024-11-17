@@ -13,6 +13,8 @@ interface AppointmentCardProps {
 }
 
 export function AppointmentCard({ appointment }: AppointmentCardProps) {
+  console.log('Rendering appointment:', appointment)
+
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'appointment',
     item: { id: appointment.id },

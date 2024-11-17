@@ -15,6 +15,7 @@ import { TimeGrid } from './calendar/time-grid'
 import { ResourceList } from './calendar/resource-list'
 import { getAppointments, rescheduleAppointment } from '@/app/actions/appointments'
 import { toast } from 'sonner'
+import { AppointmentStatus } from '@/types/appointments'
 
 export function CalendarView() {
   const [date, setDate] = useState<Date>(new Date())
@@ -25,6 +26,7 @@ export function CalendarView() {
   const { selectedClinic } = useClinicStore()
 
   const loadAppointments = async () => {
+    console.log('Loading appointments for:', selectedClinic)
     if (!selectedClinic?.id) {
       console.log("No clinic selected - skipping appointment load")
       return
@@ -68,12 +70,20 @@ export function CalendarView() {
         console.error('Failed to load appointments:', result.error)
         toast.error("Failed to load appointments: " + (result.error || 'Unknown error'))
       }
+
+      console.log('Appointments loaded:', result.data)
     } catch (error) {
       console.error('Error in loadAppointments:', error)
       toast.error("Error loading appointments: " + (error instanceof Error ? error.message : 'Unknown error'))
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleQuickAddSuccess = async () => {
+    setShowQuickAdd(false)
+    await loadAppointments()
+    toast.success('Calendar updated with new appointment')
   }
 
   useEffect(() => {
@@ -127,13 +137,6 @@ export function CalendarView() {
       console.error('Error in handleAppointmentMove:', error)
       toast.error('Error rescheduling appointment')
     }
-  }
-
-  const handleQuickAddSuccess = async () => {
-    console.log('Quick add success - reloading appointments for clinic:', selectedClinic?.id)
-    setShowQuickAdd(false)
-    await loadAppointments()
-    toast.success('Calendar updated with new appointment')
   }
 
   const getDateRangeText = () => {
@@ -203,13 +206,17 @@ export function CalendarView() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-9">
               <Card className="p-4">
-                <TimeGrid
-                  date={date}
-                  view={view}
-                  appointments={appointments}
-                  onAppointmentMove={handleAppointmentMove}
-                  isLoading={isLoading}
-                />
+              <TimeGrid
+  date={date}
+  view={view}
+  appointments={appointments.filter(apt => 
+    // Only filter cancelled/completed - keep other statuses
+    apt.status !== AppointmentStatus.CANCELLED && 
+    apt.status !== AppointmentStatus.COMPLETED
+  )}
+  onAppointmentMove={handleAppointmentMove}
+  isLoading={isLoading}
+/>
               </Card>
             </div>
 

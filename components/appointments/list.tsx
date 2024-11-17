@@ -18,9 +18,7 @@ export function AppointmentList({ appointments, onStatusChange }: AppointmentLis
     const result = await updateAppointmentStatus(id, status, clinicId)
     if (result.success) {
       toast.success('Appointment status updated')
-      onStatusChange()
-    } else {
-      toast.error(result.error || 'Failed to update status')
+      onStatusChange() // This triggers a reload
     }
   }
 
