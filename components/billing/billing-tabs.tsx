@@ -7,7 +7,6 @@ import { PaymentList } from './payment-list'
 import { InsuranceList } from './insurance-list'
 import { PaymentPlanList } from './payment-plan-list'
 import { FinancialReports } from './financial-reports'
-import { POSTerminal } from './pos-terminal'
 
 export function BillingTabs() {
   const [activeTab, setActiveTab] = useState('invoices')
@@ -17,7 +16,6 @@ export function BillingTabs() {
       <TabsList>
         <TabsTrigger value="invoices">Invoices</TabsTrigger>
         <TabsTrigger value="payments">Payments</TabsTrigger>
-        <TabsTrigger value="pos">POS Terminal</TabsTrigger>
         <TabsTrigger value="insurance">Insurance</TabsTrigger>
         <TabsTrigger value="payment-plans">Payment Plans</TabsTrigger>
         <TabsTrigger value="reports">Reports</TabsTrigger>
