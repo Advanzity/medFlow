@@ -110,6 +110,7 @@ export function CalendarView() {
 
   const handleAppointmentMove = async (id: string, newTime: Date) => {
     const appointment = appointments.find(apt => apt.id === id)
+    console.log('Moving appointment:', { id, newTime, appointment })
     if (!appointment) {
       toast.error('Appointment not found')
       return

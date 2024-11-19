@@ -1,6 +1,5 @@
 "use client"
 
-import { format } from 'date-fns'
 import { Appointment } from '@/types/appointments'
 import { AppointmentCard } from './appointment-card'
 import { useDrop } from 'react-dnd'
